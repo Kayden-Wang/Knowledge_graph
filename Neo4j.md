@@ -99,10 +99,15 @@ RETURN n, r // 返回所有匹配到的节点 n 和关系 r。对于没有关系
 //[2] 返回图谱的元数据
 // 利用APOC(Awesome Procedures On Cypher)库的meta.graph过程,它会返回图谱的元数据,包括所有的节点标签、关系类型、属性等
 CALL apoc.meta.graph()
+CALL db.schema.visualization()
 
 //[3] 获得更详细的信息
 MATCH (n) 
 OPTIONAL MATCH (n)-[r]->()
 RETURN n.name, labels(n), r, type(r)
+                                  
+//[4] 删除所有节点
+MATCH (n)
+DETACH DELETE n
 ```
 

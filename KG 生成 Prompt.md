@@ -2225,3 +2225,172 @@ CREATE (ratingBoundary)-[:hasParameters]->(bulkCarrierRatingBoundaryParams),
 > *   根据船舶的实际情况判断是否需要进行航次调整和修正。
 > *   根据计算得到的CII值和评级边界确定船舶的CII评级。
 
+## [Other] 
+
+### [1] 航运业例子
+
+> **风险评估:**  可以通过分析船舶的航线、停靠港口以及相关政策，评估航运风险。例如，可以查询在高风险海域航行的船舶，或者停靠在安全记录较差的港口的船舶。
+>
+> **政策解读:**  可以帮助理解政策对不同船公司和船舶的影响。例如，可以查询受某项政策影响的船舶类型，或者分析政策对船公司运营成本的影响。
+
+```
+// 创建船公司节点
+CREATE (maersk:ShippingCompany { name: "马士基", headquarters: "丹麦哥本哈根", founded: 1904, fleetSize: 700 })
+CREATE (cosco:ShippingCompany { name: "中远海运", headquarters: "中国上海", founded: 1993, fleetSize: 1300 })
+
+// 创建船舶节点
+CREATE (queenMary2:Vessel { name: "玛丽皇后2号", imo: 9232342, type: "客轮", built: 2003, currentLocation: "英国南安普敦" })
+CREATE (mscZoe:Vessel { name: "MSC Zoe", imo: 9703523, type: "集装箱船", built: 2015, currentLocation: "中国上海" })
+
+// 创建港口节点
+CREATE (shanghai:Port { name: "上海港", country: "中国", location: "31.2304° N, 121.4737° E", throughput: "43.3 million TEUs" })
+CREATE (singapore:Port { name: "新加坡港", country: "新加坡", location: "1.2903° N, 103.8520° E", throughput: "37.2 million TEUs" })
+CREATE (rotterdam:Port { name: "鹿特丹港", country: "荷兰", location: "51.9244° N, 4.4777° E", throughput: "14.5 million TEUs" })
+
+// 创建政策节点
+CREATE (solas:Policy { name: "国际海上人命安全公约", effectiveDate: "1974-11-01", issuedBy: "IMO" })
+CREATE (bwmc:Policy { name: "压载水管理公约", effectiveDate: "2017-09-08", issuedBy: "IMO" })
+
+// 创建IMO节点
+CREATE (imo:IMO { name: "国际海事组织", founded: 1958, purpose: "促进海上安全和保安，防止和控制船舶造成的海洋污染" })
+
+// 创建CII节点
+CREATE (cii:CII { name: "现有船舶能效指数", calculationMethod: "EEDI", ratingScale: "A-E", implementationDate: "2023-01-01" })
+
+// 创建拥有关系
+CREATE (maersk)-[:OWNS]->(queenMary2)
+CREATE (cosco)-[:OWNS]->(mscZoe)
+
+// 创建停靠关系
+CREATE (mscZoe)-[:CALLS_AT]->(shanghai)
+CREATE (queenMary2)-[:CALLS_AT]->(southampton)
+
+// 创建发布关系
+CREATE (imo)-[:ISSUES]->(solas)
+CREATE (imo)-[:ISSUES]->(bwmc)
+
+// 创建遵守关系
+CREATE (queenMary2)-[:COMPLIES_WITH]->(solas)
+CREATE (mscZoe)-[:COMPLIES_WITH]->(bwmc)
+
+// 创建影响关系
+CREATE (bwmc)-[:AFFECTS]->(cosco)
+CREATE (bwmc)-[:AFFECTS]->(maersk)
+
+// 创建衡量关系
+CREATE (cii)-[:MEASURES]->(queenMary2)
+CREATE (cii)-[:MEASURES]->(mscZoe)
+```
+
+**查询示例**
+
+查询所有由马士基拥有的船舶：
+
+```cypher
+MATCH (m:ShippingCompany { name: "马士基" })-[:OWNS]->(v:Vessel)
+RETURN v
+```
+
+查询所有停靠在上海港的船舶：
+
+```cypher
+MATCH (v:Vessel)-[:CALLS_AT]->(p:Port { name: "上海港" })
+RETURN v
+```
+
+查询IMO发布的所有政策：
+
+```cypher
+MATCH (i:IMO)-[:ISSUES]->(p:Policy)
+RETURN p
+```
+
+查询受压载水管理公约影响的船公司：
+
+```cypher
+MATCH (p:Policy { name: "压载水管理公约" })-[:AFFECTS]->(sc:ShippingCompany)
+RETURN sc
+```
+
+### [2] 航运业本体例子
+
+**节点类型 (Node Labels):**
+
+* **Concept:**  代表本体中的概念，例如“船公司”、“船舶”、“港口”等。
+* **Property:** 代表概念的属性，例如“公司名称”、“船名”、“IMO 编号”等。
+* **DataType:** 代表属性的数据类型，例如“字符串”、“整数”、“日期”等。
+
+**关系类型 (Relationship Types):**
+
+* **DOMAIN:**  表示属性所属的概念。
+* **RANGE:** 表示属性的取值范围。
+* **SUBCLASS_OF:** 表示概念之间的继承关系。
+
+**示例 Cypher 代码:**
+
+```cypher
+// 创建 Concept 节点
+CREATE (shippingCompany:Concept { name: "船公司" })
+CREATE (vessel:Concept { name: "船舶" })
+CREATE (port:Concept { name: "港口" })
+CREATE (policy:Concept { name: "政策" })
+CREATE (imo:Concept { name: "IMO" })
+CREATE (cii:Concept { name: "CII" })
+
+// 创建 Property 节点
+CREATE (companyName:Property { name: "公司名称" })
+CREATE (fleetSize:Property { name: "船队规模" })
+CREATE (vesselName:Property { name: "船名" })
+CREATE (imoNumber:Property { name: "IMO 编号" })
+CREATE (portName:Property { name: "港口名称" })
+CREATE (policyName:Property { name: "政策名称" })
+
+// 创建 DataType 节点
+CREATE (string:DataType { name: "字符串" })
+CREATE (integer:DataType { name: "整数" })
+
+// 定义 DOMAIN 和 RANGE 关系
+CREATE (companyName)-[:DOMAIN]->(shippingCompany)
+CREATE (companyName)-[:RANGE]->(string)
+CREATE (fleetSize)-[:DOMAIN]->(shippingCompany)
+CREATE (fleetSize)-[:RANGE]->(integer)
+CREATE (vesselName)-[:DOMAIN]->(vessel)
+CREATE (vesselName)-[:RANGE]->(string)
+CREATE (imoNumber)-[:DOMAIN]->(vessel)
+CREATE (imoNumber)-[:RANGE]->(integer)
+CREATE (portName)-[:DOMAIN]->(port)
+CREATE (portName)-[:RANGE]->(string)
+CREATE (policyName)-[:DOMAIN]->(policy)
+CREATE (policyName)-[:RANGE]->(string)
+
+// 定义 SUBCLASS_OF 关系 (可选)
+// 例如，客轮和集装箱船都是船舶的子类
+CREATE (passengerVessel:Concept { name: "客轮" })-[:SUBCLASS_OF]->(vessel)
+CREATE (containerVessel:Concept { name: "集装箱船" })-[:SUBCLASS_OF]->(vessel)
+```
+
+**"从数据平面到本体再返回" 查询示例**
+
+**需求：** 查找所有船队规模大于 1000 艘的船公司的名称。
+
+**查询语句：**
+
+```cypher
+// 1. 从本体获取 "船队规模" 属性的定义
+MATCH (fleetSize:Property { name: "船队规模" })-[:DOMAIN]->(shippingCompany:Concept)
+// 2. 从数据平面查找符合条件的船公司
+MATCH (sc:ShippingCompany)
+WHERE sc[fleetSize.name] > 1000
+// 3. 返回船公司名称
+RETURN sc.name AS 公司名称
+```
+
+**解释：**
+
+1.  首先，我们通过本体找到 "船队规模" 属性所属的概念 "船公司"，并将属性节点存储在 `fleetSize` 变量中。
+2.  然后，我们在数据平面中查找所有 `ShippingCompany` 节点，并利用 `fleetSize.name` 动态获取属性名，筛选出船队规模大于 1000 的船公司。
+3.  最后，我们返回符合条件的船公司名称。
+
+**总结：**
+
+通过将本体和数据存储在同一个图数据库中，我们可以方便地进行 "从数据平面到本体再返回" 的查询，从而实现更灵活、更智能的数据分析和知识发现。
